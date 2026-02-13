@@ -137,13 +137,69 @@ class RecommendationResponse(BaseModel):
     score: float
     reason: str
 
+# Behavioral Signal Models (Phase 2)
+class BehaviorSignal(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    signal_type: str  # "watch_time", "pause_frequency", "skip", "rewatch"
+    movie_id: Optional[str] = None
+    value: float
+    metadata: Optional[Dict[str, Any]] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+class UserBehaviorProfile(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    user_id: str
+    preferred_time: Optional[str] = None  # morning, afternoon, evening, night
+    avg_session_duration: int = 0  # minutes
+    completion_rate: float = 0.0
+    binge_watching: bool = False
+    current_mood: str = "neutral"
+    preferred_genres: List[str] = Field(default_factory=list)
+    last_updated: datetime = Field(default_factory=datetime.utcnow)
+
 # Group Session Models (Phase 3)
+class GroupSessionCreate(BaseModel):
+    movie_id: str
+    name: Optional[str] = None
+
+class GroupSessionInvite(BaseModel):
+    session_id: str
+    user_email: str
+
 class GroupSession(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    host_user_id: str
+    member_ids: List[str] = Field(default_factory=list)
+    movie_id: str
+    current_position: int = 0
+    is_playing: bool = False
+    status: str = "active"  # active, paused, ended
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class GroupSessionResponse(BaseModel):
+    id: str
+    name: str
     host_user_id: str
     member_ids: List[str]
     movie_id: str
-    current_position: int = 0
-    status: str = "active"  # active, paused, ended
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    current_position: int
+    is_playing: bool
+    status: str
+    movie: Optional[MovieResponse] = None
+    member_count: int = 0
+
+class PlaybackState(BaseModel):
+    position: int  # seconds
+    is_playing: bool
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+class ChatMessage(BaseModel):
+    user_id: str
+    user_name: str
+    message: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
