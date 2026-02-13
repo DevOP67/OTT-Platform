@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, Query
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -14,13 +14,17 @@ from models import (
     Movie, MovieResponse, MovieListResponse,
     WatchHistory, WatchProgressUpdate, WatchRating, WatchHistoryResponse,
     InteractionCreate, Interaction,
-    RecommendationRequest, RecommendationResponse
+    RecommendationRequest, RecommendationResponse,
+    BehaviorSignal, UserBehaviorProfile,
+    GroupSession, GroupSessionCreate, GroupSessionResponse, GroupSessionInvite, PlaybackState, ChatMessage
 )
 from auth import (
     get_password_hash, verify_password, create_access_token, get_current_user
 )
 from tmdb_service import fetch_popular_movies, fetch_movie_genres, search_movies, transform_tmdb_movie
 from ml_service import recommendation_engine
+from behavior_service import behavior_analyzer
+from websocket_manager import manager
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
