@@ -199,7 +199,7 @@ async def get_personalized_recommendations(
     all_movies = await db.movies.find({}, {"_id": 0}).to_list(10000)
     
     if not all_movies:
-        return {"recommendations": []}\n    
+        return {"recommendations": []}
     # Create movie lookup
     movies_dict = {m["id"]: m for m in all_movies}
     
