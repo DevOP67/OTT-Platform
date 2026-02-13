@@ -123,12 +123,6 @@ export const GroupWatchPage = () => {
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleSendMessage();
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen pt-24 flex items-center justify-center">
