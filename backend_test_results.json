@@ -1,0 +1,17 @@
+{
+  "summary": {
+    "total_tests": 1,
+    "passed_tests": 0,
+    "success_rate": 0.0,
+    "timestamp": "2026-02-13T13:14:38.175606"
+  },
+  "detailed_results": [
+    {
+      "test_name": "Health Check",
+      "success": false,
+      "details": "Backend connectivity test",
+      "timestamp": "2026-02-13T13:14:38.175319",
+      "response_sample": "{'status_code': 520, 'text': '<!DOCTYPE html>\\n<!--[if lt IE 7]> <html class=\"no-js ie6 oldie\" lang=\"en-US\"> <![endif]-->\\n<!--[if IE 7]>    <html class=\"no-js ie7 oldie\" lang=\"en-US\"> <![endif]-->\\n<"
+    }
+  ]
+}
