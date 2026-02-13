@@ -104,7 +104,7 @@ async def login(credentials: UserLogin):
     )
 
 async def get_current_user_wrapper(credentials = Depends(get_current_user)):
-    \"\"\"Wrapper to inject db dependency\"\"\"
+    """Wrapper to inject db dependency"""
     from fastapi.security import HTTPBearer
     security = HTTPBearer()
     creds = await security(credentials)
