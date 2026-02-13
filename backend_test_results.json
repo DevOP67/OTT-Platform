@@ -1,17 +1,38 @@
 {
   "summary": {
-    "total_tests": 1,
-    "passed_tests": 0,
-    "success_rate": 0.0,
-    "timestamp": "2026-02-13T13:14:38.175606"
+    "total_tests": 4,
+    "passed_tests": 2,
+    "success_rate": 0.5,
+    "timestamp": "2026-02-13T13:16:14.163382"
   },
   "detailed_results": [
     {
       "test_name": "Health Check",
-      "success": false,
+      "success": true,
       "details": "Backend connectivity test",
-      "timestamp": "2026-02-13T13:14:38.175319",
-      "response_sample": "{'status_code': 520, 'text': '<!DOCTYPE html>\\n<!--[if lt IE 7]> <html class=\"no-js ie6 oldie\" lang=\"en-US\"> <![endif]-->\\n<!--[if IE 7]>    <html class=\"no-js ie7 oldie\" lang=\"en-US\"> <![endif]-->\\n<"
+      "timestamp": "2026-02-13T13:16:13.399314",
+      "response_sample": "{'status': 'healthy'}"
+    },
+    {
+      "test_name": "Root Endpoint",
+      "success": true,
+      "details": "API root endpoint accessibility",
+      "timestamp": "2026-02-13T13:16:13.528774",
+      "response_sample": "{'message': 'AI Movie Recommendation Platform API', 'version': '1.0.0', 'status': 'active'}"
+    },
+    {
+      "test_name": "User Registration",
+      "success": false,
+      "details": "Registration failed for testuser_131613@example.com",
+      "timestamp": "2026-02-13T13:16:14.001459",
+      "response_sample": "{'access_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlMWJlMTg3MC0wNmNlLTQ0NTQtYjE4Mi01MjQ2Yzc0NWEyYmYiLCJleHAiOjE3NzE1OTMzNzN9.HxlDXDus4YqqPG3GBAQkAvs5FBntrABg6vIRxY7j4uc', 'token_type': "
+    },
+    {
+      "test_name": "User Login",
+      "success": false,
+      "details": "Login failed for test@example.com",
+      "timestamp": "2026-02-13T13:16:14.163090",
+      "response_sample": "{'detail': 'Invalid email or password'}"
     }
   ]
 }
