@@ -477,6 +477,285 @@ async def get_platform_stats():
 # ==================== Root Endpoint ====================
 
 @api_router.get("/")
+
+
+# ==================== Phase 2: Behavioral Intelligence ====================
+
+@api_router.get("/behavior/profile")
+async def get_behavior_profile(current_user: User = Depends(get_current_user_wrapper)):
+    """Get user's behavioral profile"""
+    # Get watch history
+    watch_history = await db.watch_history.find(
+        {"user_id": current_user.id},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    # Analyze patterns
+    patterns = behavior_analyzer.analyze_watch_patterns(watch_history)
+    
+    # Get recent interactions
+    interactions = await db.interactions.find(
+        {"user_id": current_user.id},
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(50).to_list(50)
+    
+    # Detect mood
+    mood = behavior_analyzer.detect_mood(watch_history, interactions)
+    
+    profile = UserBehaviorProfile(
+        user_id=current_user.id,
+        preferred_time=patterns.get('preferred_time'),
+        avg_session_duration=patterns.get('avg_session_duration', 0),
+        completion_rate=patterns.get('completion_rate', 0),
+        binge_watching=patterns.get('binge_watching', False),
+        current_mood=mood,
+        preferred_genres=patterns.get('preferred_genres', [])
+    )
+    
+    return profile
+
+@api_router.post("/behavior/signal")
+async def record_behavior_signal(
+    signal: BehaviorSignal,
+    current_user: User = Depends(get_current_user_wrapper)
+):
+    """Record a behavioral signal"""
+    signal.user_id = current_user.id
+    signal_dict = signal.model_dump()
+    signal_dict['timestamp'] = signal_dict['timestamp'].isoformat()
+    
+    await db.behavior_signals.insert_one(signal_dict)
+    
+    return {"message": "Signal recorded"}
+
+@api_router.get("/recommendations/intelligent")
+async def get_intelligent_recommendations(
+    limit: int = Query(20, le=100),
+    current_user: User = Depends(get_current_user_wrapper)
+):
+    """Get intelligent recommendations enhanced with behavioral analysis"""
+    # Get watch history
+    watch_history = await db.watch_history.find(
+        {"user_id": current_user.id},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    # Get recent interactions
+    interactions = await db.interactions.find(
+        {"user_id": current_user.id},
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(50).to_list(50)
+    
+    # Analyze behavior
+    patterns = behavior_analyzer.analyze_watch_patterns(watch_history)
+    mood = behavior_analyzer.detect_mood(watch_history, interactions)
+    
+    # Get all movies
+    all_movies = await db.movies.find({}, {"_id": 0}).to_list(10000)
+    
+    if not all_movies:
+        return {"recommendations": []}
+    
+    # Create movie lookup
+    movies_dict = {m["id"]: m for m in all_movies}
+    
+    # Generate user profile vector
+    user_vector = recommendation_engine.generate_user_profile_vector(watch_history, movies_dict)
+    
+    # Get base recommendations
+    base_recs = recommendation_engine.hybrid_recommendations(
+        user_id=current_user.id,
+        user_vector=user_vector,
+        candidate_movies=all_movies,
+        watch_history=watch_history,
+        top_k=limit * 2  # Get more for behavior filtering
+    )
+    
+    # Enhance with behavioral intelligence
+    enhanced_recs = behavior_analyzer.enhance_recommendations_with_behavior(
+        base_recs,
+        patterns,
+        mood
+    )
+    
+    # Format response
+    result = []
+    for rec in enhanced_recs[:limit]:
+        movie = rec["movie"]
+        behavior_factors = rec.get('behavior_factors', {})
+        reason = f"{rec['reason']} • Mood: {behavior_factors.get('mood', 'neutral')}"
+        
+        result.append(RecommendationResponse(
+            movie=MovieResponse(**movie),
+            score=rec["score"],
+            reason=reason
+        ))
+    
+    return {"recommendations": result, "mood": mood, "patterns": patterns}
+
+# ==================== Phase 3: Group Watch Sessions ====================
+
+@api_router.post("/groups/create", response_model=GroupSessionResponse)
+async def create_group_session(
+    session_data: GroupSessionCreate,
+    current_user: User = Depends(get_current_user_wrapper)
+):
+    """Create a new group watch session"""
+    # Check if movie exists
+    movie = await db.movies.find_one({"id": session_data.movie_id}, {"_id": 0})
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+    
+    # Create session
+    session = GroupSession(
+        name=session_data.name or f"{current_user.name}'s Watch Party",
+        host_user_id=current_user.id,
+        member_ids=[current_user.id],
+        movie_id=session_data.movie_id,
+    )
+    
+    session_dict = session.model_dump()
+    session_dict['created_at'] = session_dict['created_at'].isoformat()
+    session_dict['updated_at'] = session_dict['updated_at'].isoformat()
+    
+    await db.group_sessions.insert_one(session_dict)
+    
+    return GroupSessionResponse(
+        **session.model_dump(),
+        movie=MovieResponse(**movie),
+        member_count=1
+    )
+
+@api_router.get("/groups/{session_id}", response_model=GroupSessionResponse)
+async def get_group_session(
+    session_id: str,
+    current_user: User = Depends(get_current_user_wrapper)
+):
+    """Get group session details"""
+    session = await db.group_sessions.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Check if user is a member
+    if current_user.id not in session.get('member_ids', []):
+        raise HTTPException(status_code=403, detail="Not a session member")
+    
+    # Get movie details
+    movie = await db.movies.find_one({"id": session.get('movie_id')}, {"_id": 0})
+    
+    return GroupSessionResponse(
+        **session,
+        movie=MovieResponse(**movie) if movie else None,
+        member_count=len(session.get('member_ids', []))
+    )
+
+@api_router.post("/groups/{session_id}/join")
+async def join_group_session(
+    session_id: str,
+    current_user: User = Depends(get_current_user_wrapper)
+):
+    """Join a group watch session"""
+    session = await db.group_sessions.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Add user to members if not already in
+    if current_user.id not in session.get('member_ids', []):
+        await db.group_sessions.update_one(
+            {"id": session_id},
+            {
+                "$push": {"member_ids": current_user.id},
+                "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
+            }
+        )
+    
+    return {"message": "Joined session successfully"}
+
+@api_router.get("/groups")
+async def get_user_group_sessions(
+    current_user: User = Depends(get_current_user_wrapper)
+):
+    """Get all group sessions for current user"""
+    sessions = await db.group_sessions.find(
+        {"member_ids": current_user.id, "status": "active"},
+        {"_id": 0}
+    ).to_list(100)
+    
+    result = []
+    for session in sessions:
+        movie = await db.movies.find_one({"id": session.get('movie_id')}, {"_id": 0})
+        result.append(GroupSessionResponse(
+            **session,
+            movie=MovieResponse(**movie) if movie else None,
+            member_count=len(session.get('member_ids', []))
+        ))
+    
+    return {"sessions": result}
+
+@api_router.post("/groups/{session_id}/end")
+async def end_group_session(
+    session_id: str,
+    current_user: User = Depends(get_current_user_wrapper)
+):
+    """End a group watch session (host only)"""
+    session = await db.group_sessions.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    if session.get('host_user_id') != current_user.id:
+        raise HTTPException(status_code=403, detail="Only host can end session")
+    
+    await db.group_sessions.update_one(
+        {"id": session_id},
+        {
+            "$set": {
+                "status": "ended",
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    return {"message": "Session ended"}
+
+# ==================== WebSocket for Real-time Sync ====================
+
+@app.websocket("/ws/group/{session_id}/{user_id}")
+async def websocket_group_session(websocket: WebSocket, session_id: str, user_id: str):
+    """WebSocket endpoint for real-time group session sync"""
+    await manager.connect(websocket, session_id, user_id)
+    
+    try:
+        while True:
+            # Receive message from client
+            data = await websocket.receive_json()
+            message_type = data.get('type')
+            
+            if message_type == 'playback_update':
+                # Sync playback state
+                state = data.get('state', {})
+                await manager.update_playback_state(session_id, state, websocket)
+            
+            elif message_type == 'chat_message':
+                # Broadcast chat message
+                message = data.get('message', '')
+                await manager.send_message(session_id, user_id, message, websocket)
+            
+            elif message_type == 'seek':
+                # Sync seek position
+                position = data.get('position', 0)
+                await manager.update_playback_state(session_id, {
+                    'position': position,
+                    'is_playing': data.get('is_playing', False)
+                }, websocket)
+            
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, session_id, user_id)
+        await manager.broadcast(session_id, {
+            'type': 'user_left',
+            'user_id': user_id,
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        })
+
 async def root():
     return {
         "message": "AI Movie Recommendation Platform API",
