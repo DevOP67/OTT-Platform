@@ -18,6 +18,7 @@ export const recommendationsAPI = {
   getPersonalized: (limit = 20) => api.get('/recommendations/personalized', { params: { limit } }),
   getTrending: (limit = 20) => api.get('/recommendations/trending', { params: { limit } }),
   getSimilar: (movieId, limit = 10) => api.get(`/recommendations/similar/${movieId}`, { params: { limit } }),
+  getIntelligent: (limit = 20) => api.get('/recommendations/intelligent', { params: { limit } }),
 };
 
 export const watchAPI = {
@@ -29,6 +30,19 @@ export const watchAPI = {
 
 export const interactionsAPI = {
   create: (data) => api.post('/interactions', data),
+};
+
+export const behaviorAPI = {
+  getProfile: () => api.get('/behavior/profile'),
+  recordSignal: (signal) => api.post('/behavior/signal', signal),
+};
+
+export const groupAPI = {
+  createSession: (data) => api.post('/groups/create', data),
+  getSession: (sessionId) => api.get(`/groups/${sessionId}`),
+  joinSession: (sessionId) => api.post(`/groups/${sessionId}/join`),
+  getUserSessions: () => api.get('/groups'),
+  endSession: (sessionId) => api.post(`/groups/${sessionId}/end`),
 };
 
 export const adminAPI = {
