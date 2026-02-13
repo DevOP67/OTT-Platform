@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Film, Search, User, LogOut, Home, TrendingUp } from 'lucide-react';
+import { Film, Search, User, LogOut, Home, TrendingUp, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
