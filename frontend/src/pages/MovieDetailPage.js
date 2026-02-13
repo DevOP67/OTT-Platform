@@ -54,9 +54,32 @@ export const MovieDetailPage = () => {
 
     try {
       await watchAPI.startWatching(id);
+      setShowPlayer(true);
       setPlaying(true);
+      toast.success('Starting playback...');
     } catch (error) {
       toast.error('Failed to start watching');
+      console.error(error);
+    }
+  };
+
+  const handleClosePlayer = () => {
+    setPlaying(false);
+    setShowPlayer(false);
+  };
+
+  const handleProgress = (state) => {
+    // Update watch progress every 10 seconds
+    if (state.playedSeconds % 10 < 1 && state.playedSeconds > 0) {
+      try {
+        watchAPI.updateProgress({
+          movie_id: id,
+          progress_seconds: Math.floor(state.playedSeconds),
+          total_duration: Math.floor(state.loadedSeconds),
+        });
+      } catch (error) {
+        console.error('Failed to update progress:', error);
+      }
     }
   };
 
