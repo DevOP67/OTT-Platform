@@ -79,6 +79,30 @@ const AppContent = () => {
           }
         />
         <Route
+          path="/intelligent"
+          element={
+            <ProtectedRoute>
+              <IntelligentRecommendationsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/groups"
+          element={
+            <ProtectedRoute>
+              <GroupSessionsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/group/:sessionId"
+          element={
+            <ProtectedRoute>
+              <GroupWatchPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/profile"
           element={
             <ProtectedRoute>
