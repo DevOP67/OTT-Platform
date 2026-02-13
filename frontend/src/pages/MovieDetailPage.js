@@ -196,10 +196,11 @@ export const MovieDetailPage = () => {
                 <button
                   data-testid="play-movie-button"
                   onClick={handlePlayClick}
-                  className="bg-primary hover:bg-primary-hover text-black font-bold py-3 px-8 rounded-full flex items-center gap-2 transition-transform hover:scale-105 shadow-glow"
+                  disabled={showPlayer}
+                  className="bg-primary hover:bg-primary-hover text-black font-bold py-3 px-8 rounded-full flex items-center gap-2 transition-transform hover:scale-105 shadow-glow disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Play className="w-5 h-5 fill-current" />
-                  {playing ? 'Playing' : 'Play Now'}
+                  {showPlayer ? 'Now Playing' : 'Play Now'}
                 </button>
                 <button
                   data-testid="like-movie-button"
@@ -215,21 +216,73 @@ export const MovieDetailPage = () => {
         </div>
       </section>
 
-      {/* Video Player */}
-      {playing && (
-        <section className="py-12 px-6 bg-background-paper">
-          <div className="max-w-7xl mx-auto">
-            <div className="video-player-container" data-testid="video-player">
-              <ReactPlayer
-                url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-                width="100%"
-                height="100%"
-                controls
-                playing
-              />
+      {/* Video Player Modal */}
+      {showPlayer && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4"
+          data-testid="video-player-modal"
+        >
+          <div className="w-full max-w-6xl relative">
+            {/* Close Button */}
+            <button
+              onClick={handleClosePlayer}
+              className="absolute -top-12 right-0 text-white hover:text-primary transition-colors z-10"
+              data-testid="close-player-button"
+            >
+              <X className="w-8 h-8" />
+            </button>
+
+            {/* Player Container */}
+            <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden shadow-2xl">
+              <div className="absolute inset-0">
+                <ReactPlayer
+                  ref={playerRef}
+                  url="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+                  width="100%"
+                  height="100%"
+                  controls
+                  playing={playing}
+                  onPlay={() => setPlaying(true)}
+                  onPause={() => setPlaying(false)}
+                  onProgress={handleProgress}
+                  onEnded={() => {
+                    setPlaying(false);
+                    toast.success('Movie finished!');
+                  }}
+                  onError={(e) => {
+                    console.error('Player error:', e);
+                    toast.error('Error playing video');
+                  }}
+                  config={{
+                    file: {
+                      attributes: {
+                        controlsList: 'nodownload',
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Movie Info Below Player */}
+            <div className="mt-6 glass-effect rounded-lg p-6">
+              <h2 className="font-heading text-2xl font-bold text-white mb-2">{movie.title}</h2>
+              <div className="flex items-center gap-4 text-text-secondary text-sm">
+                <div className="flex items-center gap-1">
+                  <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                  <span className="text-white font-bold">{movie.rating?.toFixed(1)}</span>
+                </div>
+                <span>•</span>
+                <span>{movie.runtime} min</span>
+                <span>•</span>
+                <span>{movie.release_date}</span>
+              </div>
             </div>
           </div>
-        </section>
+        </motion.div>
       )}
 
       {/* Rating Section */}
