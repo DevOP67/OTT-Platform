@@ -19,10 +19,24 @@ export const GroupWatchPage = () => {
   const playerRef = useRef(null);
   const wsRef = useRef(null);
   const [isHost, setIsHost] = useState(false);
+  const [position, setPosition] = useState(0);
+  const [onlineUsers, setOnlineUsers] = useState([]);
 
   useEffect(() => {
     fetchSession();
   }, [sessionId]);
+
+  useEffect(() => {
+    if (session && user) {
+      connectWebSocket();
+    }
+    
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [session, user]);
 
   const fetchSession = async () => {
     try {
