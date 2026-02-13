@@ -111,6 +111,24 @@ export const GroupWatchPage = () => {
     }
   };
 
+  const sendMessage = () => {
+    if (newMessage.trim() && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      const message = {
+        type: 'chat_message',
+        message: newMessage.trim(),
+        user_id: user.id
+      };
+      wsRef.current.send(JSON.stringify(message));
+      setNewMessage('');
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      sendMessage();
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen pt-24 flex items-center justify-center">
