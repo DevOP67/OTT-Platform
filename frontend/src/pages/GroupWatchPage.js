@@ -198,7 +198,7 @@ export const GroupWatchPage = () => {
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
               placeholder="Type a message..."
               className="flex-1 bg-zinc-900/50 border border-white/10 rounded-lg text-white px-4 py-2"
             />
