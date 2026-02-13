@@ -19,15 +19,27 @@ export const IntelligentRecommendationsPage = () => {
     try {
       setLoading(true);
       const [recsResponse, profileResponse] = await Promise.all([
-        recommendationsAPI.getIntelligent(20),
-        behaviorAPI.getProfile(),
+        recommendationsAPI.getIntelligent(20).catch(err => {
+          console.error('Recommendations error:', err);
+          // Fallback to regular recommendations if intelligent fails
+          return recommendationsAPI.getTrending(20);
+        }),
+        behaviorAPI.getProfile().catch(err => {
+          console.error('Profile error:', err);
+          return { data: { 
+            preferred_time: 'any time', 
+            completion_rate: 0, 
+            binge_watching: false,
+            current_mood: 'neutral'
+          }};
+        }),
       ]);
       
-      setRecommendations(recsResponse.data.recommendations);
-      setMood(recsResponse.data.mood);
+      setRecommendations(recsResponse.data.recommendations || []);
+      setMood(recsResponse.data.mood || 'neutral');
       setBehaviorProfile(profileResponse.data);
     } catch (error) {
-      toast.error('Failed to load intelligent recommendations');
+      toast.error('Failed to load recommendations');
       console.error(error);
     } finally {
       setLoading(false);
