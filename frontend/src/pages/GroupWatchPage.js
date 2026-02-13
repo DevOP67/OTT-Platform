@@ -37,6 +37,66 @@ export const GroupWatchPage = () => {
     }
   };
 
+  const connectWebSocket = () => {
+    const backendUrl = process.env.REACT_APP_BACKEND_URL;
+    // Convert HTTPS to WSS and HTTP to WS
+    const wsProtocol = backendUrl.includes('https') ? 'wss' : 'ws';
+    const cleanUrl = backendUrl.replace('https://', '').replace('http://', '');
+    const wsUrl = `${wsProtocol}://${cleanUrl}/ws/group/${sessionId}/${user.id}`;
+    
+    console.log('Connecting to WebSocket:', wsUrl);
+    
+    try {
+      wsRef.current = new WebSocket(wsUrl);
+      
+      wsRef.current.onopen = () => {
+        console.log('WebSocket connected');
+        toast.success('Connected to watch party');
+      };
+      
+      wsRef.current.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        switch (data.type) {
+          case 'state_sync':
+            setPlaying(data.state.is_playing || false);
+            break;
+          
+          case 'playback_update':
+            setPlaying(data.state.is_playing || false);
+            break;
+          
+          case 'chat_message':
+            setChatMessages(prev => [...prev, {
+              user_id: data.user_id,
+              message: data.message,
+              timestamp: data.timestamp
+            }]);
+            break;
+          
+          case 'user_joined':
+            toast.success('Someone joined the party');
+            break;
+          
+          default:
+            break;
+        }
+      };
+      
+      wsRef.current.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        toast.error('Connection error - chat may not work');
+      };
+      
+      wsRef.current.onclose = () => {
+        console.log('WebSocket disconnected');
+      };
+    } catch (error) {
+      console.error('Failed to create WebSocket:', error);
+      toast.error('Could not connect to chat');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen pt-24 flex items-center justify-center">
