@@ -203,7 +203,7 @@ export const GroupWatchPage = () => {
               className="flex-1 bg-zinc-900/50 border border-white/10 rounded-lg text-white px-4 py-2"
             />
             <button 
-              onClick={sendMessage}
+              onClick={handleSendMessage}
               className="bg-primary hover:bg-primary-hover text-black p-2 rounded-lg"
             >
               <Send className="w-5 h-5" />
