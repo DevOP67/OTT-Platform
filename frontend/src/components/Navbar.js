@@ -53,12 +53,20 @@ export const Navbar = ({ onAuthClick }) => {
                 Browse
               </Link>
               <Link
-                to="/recommendations"
-                data-testid="nav-link-recommendations"
+                to="/intelligent"
+                data-testid="nav-link-intelligent"
                 className="flex items-center gap-2 text-text-secondary hover:text-white transition-colors"
               >
                 <TrendingUp className="w-5 h-5" />
-                For You
+                AI Picks
+              </Link>
+              <Link
+                to="/groups"
+                data-testid="nav-link-groups"
+                className="flex items-center gap-2 text-text-secondary hover:text-white transition-colors"
+              >
+                <Users className="w-5 h-5" />
+                Watch Party
               </Link>
             </div>
           )}
