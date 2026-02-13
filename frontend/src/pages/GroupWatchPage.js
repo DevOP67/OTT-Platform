@@ -111,7 +111,7 @@ export const GroupWatchPage = () => {
     }
   };
 
-  const sendMessage = () => {
+  const handleSendMessage = () => {
     if (newMessage.trim() && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       const message = {
         type: 'chat_message',
