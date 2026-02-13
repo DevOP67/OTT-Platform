@@ -125,7 +125,7 @@ export const GroupWatchPage = () => {
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
-      sendMessage();
+      handleSendMessage();
     }
   };
 
