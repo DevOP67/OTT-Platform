@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Play, Star, Clock, Calendar, ArrowLeft, Loader, ThumbsUp, Heart } from 'lucide-react';
+import { Play, Pause, Star, Clock, Calendar, ArrowLeft, Loader, Heart, X } from 'lucide-react';
 import ReactPlayer from 'react-player';
 import { moviesAPI, watchAPI, recommendationsAPI, interactionsAPI } from '../api';
 import { MovieCard } from '../components/MovieCard';
@@ -16,7 +16,9 @@ export const MovieDetailPage = () => {
   const [similarMovies, setSimilarMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState(false);
+  const [showPlayer, setShowPlayer] = useState(false);
   const [userRating, setUserRating] = useState(0);
+  const playerRef = useRef(null);
 
   useEffect(() => {
     fetchMovieDetails();
