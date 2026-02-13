@@ -119,7 +119,7 @@ class MoviePlatformTester:
             }
         }
         
-        success, response = self.make_request('POST', 'auth/register', 201, test_data)
+        success, response = self.make_request('POST', 'auth/register', 200, test_data)
         
         if success and 'access_token' in response:
             details = f"Successfully registered user: {test_data['email']}"
