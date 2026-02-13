@@ -1,38 +1,122 @@
 {
   "summary": {
-    "total_tests": 4,
-    "passed_tests": 2,
-    "success_rate": 0.5,
-    "timestamp": "2026-02-13T13:16:14.163382"
+    "total_tests": 16,
+    "passed_tests": 11,
+    "success_rate": 0.6875,
+    "timestamp": "2026-02-13T13:16:36.757700"
   },
   "detailed_results": [
     {
       "test_name": "Health Check",
       "success": true,
       "details": "Backend connectivity test",
-      "timestamp": "2026-02-13T13:16:13.399314",
+      "timestamp": "2026-02-13T13:16:32.890855",
       "response_sample": "{'status': 'healthy'}"
     },
     {
       "test_name": "Root Endpoint",
       "success": true,
       "details": "API root endpoint accessibility",
-      "timestamp": "2026-02-13T13:16:13.528774",
+      "timestamp": "2026-02-13T13:16:33.002892",
       "response_sample": "{'message': 'AI Movie Recommendation Platform API', 'version': '1.0.0', 'status': 'active'}"
     },
     {
       "test_name": "User Registration",
-      "success": false,
-      "details": "Registration failed for testuser_131613@example.com",
-      "timestamp": "2026-02-13T13:16:14.001459",
-      "response_sample": "{'access_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlMWJlMTg3MC0wNmNlLTQ0NTQtYjE4Mi01MjQ2Yzc0NWEyYmYiLCJleHAiOjE3NzE1OTMzNzN9.HxlDXDus4YqqPG3GBAQkAvs5FBntrABg6vIRxY7j4uc', 'token_type': "
+      "success": true,
+      "details": "Successfully registered user: testuser_131633@example.com",
+      "timestamp": "2026-02-13T13:16:33.366468",
+      "response_sample": "{'access_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NDk3NTFlZi04ZWNjLTRjZDYtYjI1Ny0yY2MxMmNkZGE3YjciLCJleHAiOjE3NzE1OTMzOTN9.z9eCRN6E_oc0p1tYBSRhZWV7myIufK6C2LhffE8pUi4', 'token_type': "
     },
     {
       "test_name": "User Login",
+      "success": true,
+      "details": "Successfully logged in as test@example.com",
+      "timestamp": "2026-02-13T13:16:33.710981",
+      "response_sample": "{'access_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwNzU4NDgyZi01N2QwLTQ5ODYtYWU0YS1mZjBkYTlmYjQyMTAiLCJleHAiOjE3NzE1OTMzOTN9.YouygSPiE3GQYX362nf1aPQKZ9KwAhQhFDpTlArz9lI', 'token_type': "
+    },
+    {
+      "test_name": "Get Current User",
       "success": false,
-      "details": "Login failed for test@example.com",
-      "timestamp": "2026-02-13T13:16:14.163090",
-      "response_sample": "{'detail': 'Invalid email or password'}"
+      "details": "Failed to get current user info",
+      "timestamp": "2026-02-13T13:16:33.820689",
+      "response_sample": "{'status_code': 520, 'text': '<!DOCTYPE html>\\n<!--[if lt IE 7]> <html class=\"no-js ie6 oldie\" lang=\"en-US\"> <![endif]-->\\n<!--[if IE 7]>    <html class=\"no-js ie7 oldie\" lang=\"en-US\"> <![endif]-->\\n<"
+    },
+    {
+      "test_name": "Sync Movies",
+      "success": true,
+      "details": "Movie sync completed: Synced 5 new movies from TMDB",
+      "timestamp": "2026-02-13T13:16:35.473691",
+      "response_sample": "{'message': 'Synced 5 new movies from TMDB'}"
+    },
+    {
+      "test_name": "Get Movies",
+      "success": true,
+      "details": "Retrieved 5 movies (total: 5)",
+      "timestamp": "2026-02-13T13:16:35.595730",
+      "response_sample": "{'movies': [{'id': '66f74689-abe1-413d-8019-6676373c1cfd', 'tmdb_id': 278, 'title': 'The Shawshank Redemption', 'overview': 'Two imprisoned men bond over a number of years, finding solace and eventual"
+    },
+    {
+      "test_name": "Search Movies",
+      "success": true,
+      "details": "Search returned 0 movies for 'action'",
+      "timestamp": "2026-02-13T13:16:35.709055",
+      "response_sample": "{'movies': []}"
+    },
+    {
+      "test_name": "Get Movie Details",
+      "success": true,
+      "details": "Retrieved details for movie: The Shawshank Redemption",
+      "timestamp": "2026-02-13T13:16:35.826359",
+      "response_sample": "{'id': '66f74689-abe1-413d-8019-6676373c1cfd', 'tmdb_id': 278, 'title': 'The Shawshank Redemption', 'overview': 'Two imprisoned men bond over a number of years, finding solace and eventual redemption."
+    },
+    {
+      "test_name": "Start Watching",
+      "success": false,
+      "details": "Failed to start watching movie 66f74689-abe1-413d-8019-6676373c1cfd",
+      "timestamp": "2026-02-13T13:16:35.935000",
+      "response_sample": "{'status_code': 520, 'text': '<!DOCTYPE html>\\n<!--[if lt IE 7]> <html class=\"no-js ie6 oldie\" lang=\"en-US\"> <![endif]-->\\n<!--[if IE 7]>    <html class=\"no-js ie7 oldie\" lang=\"en-US\"> <![endif]-->\\n<"
+    },
+    {
+      "test_name": "Rate Movie",
+      "success": false,
+      "details": "Failed to rate movie 66f74689-abe1-413d-8019-6676373c1cfd",
+      "timestamp": "2026-02-13T13:16:36.098846",
+      "response_sample": "{'status_code': 520, 'text': '<!DOCTYPE html>\\n<!--[if lt IE 7]> <html class=\"no-js ie6 oldie\" lang=\"en-US\"> <![endif]-->\\n<!--[if IE 7]>    <html class=\"no-js ie7 oldie\" lang=\"en-US\"> <![endif]-->\\n<"
+    },
+    {
+      "test_name": "Similar Movies",
+      "success": true,
+      "details": "Retrieved 4 similar movies for 66f74689-abe1-413d-8019-6676373c1cfd",
+      "timestamp": "2026-02-13T13:16:36.235288",
+      "response_sample": "{'recommendations': [{'movie': {'id': 'b1bac99e-e393-4480-ba4a-a386c0ae04c6', 'tmdb_id': 13, 'title': 'Forrest Gump', 'overview': 'The story of several decades in the life of Forrest Gump, a slow-witt"
+    },
+    {
+      "test_name": "Get Watch History",
+      "success": false,
+      "details": "Failed to get watch history",
+      "timestamp": "2026-02-13T13:16:36.390853",
+      "response_sample": "{'status_code': 520, 'text': '<!DOCTYPE html>\\n<!--[if lt IE 7]> <html class=\"no-js ie6 oldie\" lang=\"en-US\"> <![endif]-->\\n<!--[if IE 7]>    <html class=\"no-js ie7 oldie\" lang=\"en-US\"> <![endif]-->\\n<"
+    },
+    {
+      "test_name": "Personalized Recommendations",
+      "success": false,
+      "details": "Failed to get personalized recommendations",
+      "timestamp": "2026-02-13T13:16:36.511677",
+      "response_sample": "{'status_code': 520, 'text': '<!DOCTYPE html>\\n<!--[if lt IE 7]> <html class=\"no-js ie6 oldie\" lang=\"en-US\"> <![endif]-->\\n<!--[if IE 7]>    <html class=\"no-js ie7 oldie\" lang=\"en-US\"> <![endif]-->\\n<"
+    },
+    {
+      "test_name": "Trending Recommendations",
+      "success": true,
+      "details": "Retrieved 5 trending recommendations",
+      "timestamp": "2026-02-13T13:16:36.634160",
+      "response_sample": "{'recommendations': [{'movie': {'id': '66f74689-abe1-413d-8019-6676373c1cfd', 'tmdb_id': 278, 'title': 'The Shawshank Redemption', 'overview': 'Two imprisoned men bond over a number of years, finding "
+    },
+    {
+      "test_name": "Platform Stats",
+      "success": true,
+      "details": "Platform stats: {'users': 3, 'movies': 5, 'watches': 0}",
+      "timestamp": "2026-02-13T13:16:36.757383",
+      "response_sample": "{'total_users': 3, 'total_movies': 5, 'total_watches': 0, 'total_interactions': 0}"
     }
   ]
 }
