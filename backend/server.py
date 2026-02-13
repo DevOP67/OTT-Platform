@@ -103,12 +103,9 @@ async def login(credentials: UserLogin):
         user=UserResponse(**user.model_dump())
     )
 
-async def get_current_user_wrapper(credentials = Depends(get_current_user)):
+async def get_current_user_wrapper(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())):
     """Wrapper to inject db dependency"""
-    from fastapi.security import HTTPBearer
-    security = HTTPBearer()
-    creds = await security(credentials)
-    return await get_current_user(creds, db)
+    return await get_current_user(credentials, db)
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user_wrapper)):
