@@ -1,5 +1,4 @@
 import numpy as np
-from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import List, Dict, Any, Tuple
 import logging
@@ -11,33 +10,41 @@ logger = logging.getLogger(__name__)
 
 class RecommendationEngine:
     def __init__(self):
-        self.embedding_model = None
         self.model_dir = Path("/app/ml_models")
         self.model_dir.mkdir(exist_ok=True)
+        # No ML model loading - use pre-computed embeddings from database
         
-    def load_embedding_model(self):
-        """Load sentence transformer for content-based filtering"""
-        if self.embedding_model is None:
-            try:
-                logger.info("Loading sentence-transformers model...")
-                self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-                logger.info("Model loaded successfully")
-            except Exception as e:
-                logger.error(f"Error loading embedding model: {e}")
-                raise
-    
     def generate_movie_embedding(self, movie: Dict[str, Any]) -> List[float]:
-        """Generate embedding for a movie"""
-        if self.embedding_model is None:
-            self.load_embedding_model()
+        """Generate simple embedding based on genres and metadata"""
+        # Simple hash-based embedding for deployment without ML models
+        genres = movie.get("genres", [])
+        rating = movie.get("rating", 5.0)
+        popularity = movie.get("popularity", 50.0)
         
-        # Create text representation
-        genres_text = ", ".join(movie.get("genres", []))
-        movie_text = f"{movie.get('title', '')}. {movie.get('overview', '')}. Genres: {genres_text}"
+        # Create a simple 50-dimensional embedding
+        embedding = [0.0] * 50
         
-        # Generate embedding
-        embedding = self.embedding_model.encode(movie_text, convert_to_numpy=True)
-        return embedding.tolist()
+        # Genre-based features (first 20 dimensions)
+        genre_map = {
+            "Action": 0, "Adventure": 1, "Animation": 2, "Comedy": 3,
+            "Crime": 4, "Documentary": 5, "Drama": 6, "Family": 7,
+            "Fantasy": 8, "History": 9, "Horror": 10, "Music": 11,
+            "Mystery": 12, "Romance": 13, "Science Fiction": 14, "Thriller": 15,
+            "War": 16, "Western": 17, "Sci-Fi": 14
+        }
+        
+        for genre in genres:
+            if genre in genre_map:
+                embedding[genre_map[genre]] = 1.0
+        
+        # Rating features (dimensions 20-30)
+        embedding[20] = rating / 10.0
+        embedding[21] = 1.0 if rating >= 8.0 else 0.0
+        
+        # Popularity features (dimensions 30-40)
+        embedding[30] = min(popularity / 100.0, 1.0)
+        
+        return embedding
     
     def generate_user_profile_vector(self, watch_history: List[Dict[str, Any]], movies: Dict[str, Any]) -> np.ndarray:
         """Generate user preference vector from watch history"""
