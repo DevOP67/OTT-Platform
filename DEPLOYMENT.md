@@ -1,17 +1,20 @@
 # OTT Platform Deployment Guide
 
 ## Prerequisites
+
 - GitHub account with the repository
 - Render account (free tier available)
 - MongoDB Atlas account (free tier)
 
 ## Step 1: Set up MongoDB Atlas
+
 1. Go to [MongoDB Atlas](https://www.mongodb.com/atlas)
 2. Create a free cluster
 3. Create a database user
 4. Get the connection string: `mongodb+srv://username:password@cluster.mongodb.net/dbname`
 
 ## Step 2: Deploy Backend to Render
+
 1. Go to [Render Dashboard](https://dashboard.render.com)
 2. Click "New" → "Web Service"
 3. Connect your GitHub repository
@@ -28,6 +31,7 @@
 6. Click "Create Web Service"
 
 ## Step 3: Deploy Frontend to Render
+
 1. In Render Dashboard, click "New" → "Web Service"
 2. Connect the same GitHub repository
 3. Configure:
@@ -40,13 +44,16 @@
 5. Click "Create Web Service"
 
 ## Step 4: Update Frontend API URL
+
 After backend is deployed, update the REACT_APP_API_URL in the frontend service with the actual backend URL.
 
 ## Step 5: Access Your App
+
 - Frontend: https://your-frontend-service-name.onrender.com
 - Backend API: https://your-backend-service-name.onrender.com/api
 
 ## Alternative: Vercel Deployment
+
 If you prefer Vercel:
 
 1. **Frontend on Vercel**:
@@ -59,6 +66,7 @@ If you prefer Vercel:
    - Or deploy backend separately on Render
 
 ## Notes
+
 - Render free tier has limitations (750 hours/month)
 - MongoDB Atlas free tier: 512MB storage
 - Make sure to update CORS in backend if needed for the frontend domain
