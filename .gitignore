@@ -83,3 +83,7 @@ ziPXXgS7
 
 # Test credentials (do not deploy)
 **/test_credentials.md
+-e 
+# Environment files
+*.env
+*.env.*
