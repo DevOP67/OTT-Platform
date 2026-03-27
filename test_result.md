@@ -153,15 +153,18 @@ backend:
 frontend:
   - task: "YouTube Trailer Playback"
     implemented: true
-    working: "NA"
+    working: false
     file: "/app/frontend/src/pages/MovieDetailPage.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Updated MovieDetailPage to fetch and play YouTube trailers using ReactPlayer"
+      - working: false
+        agent: "testing"
+        comment: "CRITICAL ISSUE: YouTube player NOT loading. Modal opens correctly with TRAILER badge and movie info, toast notification appears, but ReactPlayer component is not rendering any iframe. Investigation shows: (1) No ReactPlayer elements found in DOM, (2) No YouTube iframes created, (3) No network requests to YouTube, (4) Modal HTML contains 'video' tag but no 'react-player' or 'iframe'. The react-player package is installed (v3.4.0) but not rendering. Movie detail page works correctly - title, poster, rating, runtime, genres, overview all display properly. Similar Movies section displays 6 movies correctly. Issue is specifically with ReactPlayer not loading the YouTube video."
 
 metadata:
   created_by: "main_agent"
@@ -171,8 +174,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "YouTube Trailer Playbook"
-  stuck_tasks: []
+    - "YouTube Trailer Playback"
+  stuck_tasks:
+    - "YouTube Trailer Playback"
   test_all: false
   test_priority: "high_first"
 
@@ -181,3 +185,5 @@ agent_communication:
     message: "Replaced TMDB API with curated movie database. Movies now have YouTube trailer URLs. Please test: 1) GET /api/movies returns movies with trailer_url field 2) GET /api/movies/{id}/trailer returns trailer URL 3) POST /api/admin/sync-movies populates database"
   - agent: "testing"
     message: "✅ BACKEND TESTING COMPLETE: All 3 curated movie API endpoints are working perfectly. GET /api/movies returns movies with trailer_url field (20/20 movies have YouTube trailers). GET /api/movies/{id}/trailer returns correct trailer data with proper 404 handling. POST /api/admin/sync-movies successfully syncs curated database. All backend functionality for curated movies with YouTube trailers is operational. Ready for frontend integration testing."
+  - agent: "testing"
+    message: "❌ FRONTEND TESTING COMPLETE - CRITICAL ISSUE FOUND: YouTube trailer playback is NOT working. ReactPlayer component is not rendering the YouTube iframe. Detailed findings: (1) Movie detail page works perfectly - all info displays correctly (title, poster, rating, runtime, genres, overview), (2) Watch Trailer button is present and enabled, (3) Clicking button opens modal with correct UI (TRAILER badge, movie info, toast notification), (4) BUT: No YouTube player loads - no iframe created, no network requests to YouTube, ReactPlayer not rendering despite being installed (v3.4.0), (5) Similar Movies section works - displays 6 movies correctly, (6) Browse page requires authentication - could not test without working sign-in. ROOT CAUSE: ReactPlayer component failing to render YouTube iframe. Need to investigate ReactPlayer configuration or consider alternative video player implementation."
