@@ -101,3 +101,83 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "Replace TMDB API with curated movie database and enable YouTube trailer playback in the app"
+
+backend:
+  - task: "Curated Movies Service"
+    implemented: true
+    working: true
+    file: "/app/backend/curated_movies_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Created curated_movies_service.py with 47 popular movies including YouTube trailer URLs"
+      - working: true
+        agent: "testing"
+        comment: "TESTED: GET /api/movies successfully returns 20/20 movies with trailer_url field. All movies have valid YouTube trailer URLs. Sample: 'Avengers: Endgame' has trailer: https://www.youtube.com/watch?v=TcMBFSGVi1c. Curated movie service is working perfectly."
+
+  - task: "Movie Trailer API Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added GET /api/movies/{movie_id}/trailer endpoint to return trailer URL"
+      - working: true
+        agent: "testing"
+        comment: "TESTED: GET /api/movies/{movie_id}/trailer endpoint working perfectly. Successfully tested with multiple movies (Avengers: Endgame, Infinity War, Oppenheimer). Returns correct JSON format with trailer_url and title fields. Invalid movie IDs correctly return 404 status. All trailer URLs are valid YouTube links."
+
+  - task: "Sync Movies Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Updated sync endpoint to use curated movies instead of TMDB"
+      - working: true
+        agent: "testing"
+        comment: "TESTED: POST /api/admin/sync-movies endpoint working correctly. Returns success message 'Synced 0 new movies from curated database' indicating movies are already synced. Database contains 47 curated movies with YouTube trailers as expected."
+
+frontend:
+  - task: "YouTube Trailer Playback"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/MovieDetailPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Updated MovieDetailPage to fetch and play YouTube trailers using ReactPlayer"
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 2
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "YouTube Trailer Playbook"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Replaced TMDB API with curated movie database. Movies now have YouTube trailer URLs. Please test: 1) GET /api/movies returns movies with trailer_url field 2) GET /api/movies/{id}/trailer returns trailer URL 3) POST /api/admin/sync-movies populates database"
+  - agent: "testing"
+    message: "✅ BACKEND TESTING COMPLETE: All 3 curated movie API endpoints are working perfectly. GET /api/movies returns movies with trailer_url field (20/20 movies have YouTube trailers). GET /api/movies/{id}/trailer returns correct trailer data with proper 404 handling. POST /api/admin/sync-movies successfully syncs curated database. All backend functionality for curated movies with YouTube trailers is operational. Ready for frontend integration testing."

@@ -54,6 +54,7 @@ class Movie(BaseModel):
     language: str = "en"
     embedding: Optional[List[float]] = None
     video_url: Optional[str] = None
+    trailer_url: Optional[str] = None
     popularity: float = 0.0
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -70,6 +71,7 @@ class MovieResponse(BaseModel):
     runtime: int
     language: str
     popularity: float
+    trailer_url: Optional[str] = None
 
 class MovieListResponse(BaseModel):
     movies: List[MovieResponse]

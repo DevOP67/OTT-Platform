@@ -1,0 +1,52 @@
+{
+  "summary": {
+    "total_tests": 6,
+    "passed_tests": 6,
+    "success_rate": 1.0,
+    "timestamp": "2026-03-27T14:12:43.975174"
+  },
+  "detailed_results": [
+    {
+      "test_name": "Sync Curated Movies",
+      "success": true,
+      "details": "Sync successful: Synced 0 new movies from curated database",
+      "timestamp": "2026-03-27T14:12:43.188970",
+      "response_sample": "{'message': 'Synced 0 new movies from curated database'}"
+    },
+    {
+      "test_name": "Get Movies with Trailers",
+      "success": true,
+      "details": "Found 20/20 movies with trailer URLs. Sample: 'Avengers: Endgame' has trailer: https://www.youtube.com/watch?v=TcMBFSGVi1c...",
+      "timestamp": "2026-03-27T14:12:43.341770",
+      "response_sample": "{'movies': [{'id': '2f56acaf-5c57-4247-b107-29d0436bce39', 'tmdb_id': 299534, 'title': 'Avengers: Endgame', 'overview': \"After the devastating events of Avengers: Infinity War, the universe is in ruins. With the help of remaining allies, the Avengers assemble once more in order to reverse Thanos' ac"
+    },
+    {
+      "test_name": "Get Movie Trailer (Avengers: Endgame)",
+      "success": true,
+      "details": "Retrieved trailer for 'Avengers: Endgame': https://www.youtube.com/watch?v=TcMBFSGVi1c...",
+      "timestamp": "2026-03-27T14:12:43.456807",
+      "response_sample": "{'trailer_url': 'https://www.youtube.com/watch?v=TcMBFSGVi1c', 'title': 'Avengers: Endgame'}"
+    },
+    {
+      "test_name": "Get Movie Trailer (Avengers: Infinity War)",
+      "success": true,
+      "details": "Retrieved trailer for 'Avengers: Infinity War': https://www.youtube.com/watch?v=6ZfuNTqbHE8...",
+      "timestamp": "2026-03-27T14:12:43.610755",
+      "response_sample": "{'trailer_url': 'https://www.youtube.com/watch?v=6ZfuNTqbHE8', 'title': 'Avengers: Infinity War'}"
+    },
+    {
+      "test_name": "Get Movie Trailer (Oppenheimer)",
+      "success": true,
+      "details": "Retrieved trailer for 'Oppenheimer': https://www.youtube.com/watch?v=uYPbbksJxIg...",
+      "timestamp": "2026-03-27T14:12:43.813884",
+      "response_sample": "{'trailer_url': 'https://www.youtube.com/watch?v=uYPbbksJxIg', 'title': 'Oppenheimer'}"
+    },
+    {
+      "test_name": "Invalid Movie Trailer (404 Test)",
+      "success": true,
+      "details": "Correctly returned 404 for invalid movie ID: invalid-movie-id-12345",
+      "timestamp": "2026-03-27T14:12:43.974883",
+      "response_sample": "{'detail': 'Movie not found'}"
+    }
+  ]
+}

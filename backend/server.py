@@ -21,7 +21,7 @@ from models import (
 from auth import (
     get_password_hash, verify_password, create_access_token, get_current_user
 )
-from tmdb_service import fetch_popular_movies, fetch_movie_genres, search_movies, transform_tmdb_movie
+from curated_movies_service import get_all_curated_movies, get_movie_genres, search_curated_movies, transform_curated_movie
 from ml_service import recommendation_engine
 from behavior_service import behavior_analyzer
 from websocket_manager import manager
@@ -168,6 +168,19 @@ async def get_movie(movie_id: str):
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found")
     return MovieResponse(**movie)
+
+@api_router.get("/movies/{movie_id}/trailer")
+async def get_movie_trailer(movie_id: str):
+    """Get movie trailer URL"""
+    movie = await db.movies.find_one({"id": movie_id}, {"_id": 0})
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+    
+    trailer_url = movie.get("trailer_url", "")
+    if not trailer_url:
+        raise HTTPException(status_code=404, detail="Trailer not available for this movie")
+    
+    return {"trailer_url": trailer_url, "title": movie.get("title", "")}
 
 @api_router.get("/movies/search/query")
 async def search_movies_endpoint(q: str, page: int = 1):
@@ -416,22 +429,17 @@ async def create_interaction(
 # ==================== Admin/Data Management ====================
 
 @api_router.post("/admin/sync-movies")
-async def sync_movies_from_tmdb():
-    """Sync movies from TMDB (admin endpoint)"""
+async def sync_movies_from_curated():
+    """Sync movies from curated database"""
     try:
-        # Fetch genres
-        genre_map = await fetch_movie_genres()
-        
-        # Fetch popular movies (multiple pages)
-        all_tmdb_movies = []
-        for page in range(1, 6):  # Fetch 5 pages = ~100 movies
-            movies = await fetch_popular_movies(page)
-            all_tmdb_movies.extend(movies)
+        # Get all curated movies
+        all_curated_movies = get_all_curated_movies()
+        genre_map = get_movie_genres()
         
         # Transform and save to database
         saved_count = 0
-        for tmdb_movie in all_tmdb_movies:
-            movie_data = transform_tmdb_movie(tmdb_movie, genre_map)
+        for curated_movie in all_curated_movies:
+            movie_data = transform_curated_movie(curated_movie)
             
             # Check if exists
             existing = await db.movies.find_one({"tmdb_id": movie_data["tmdb_id"]}, {"_id": 0})
@@ -453,7 +461,7 @@ async def sync_movies_from_tmdb():
                 await db.movies.insert_one(movie_dict)
                 saved_count += 1
         
-        return {"message": f"Synced {saved_count} new movies from TMDB"}
+        return {"message": f"Synced {saved_count} new movies from curated database"}
     
     except Exception as e:
         logger.error(f"Error syncing movies: {e}")

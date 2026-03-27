@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Play, Pause, Star, Clock, Calendar, ArrowLeft, Loader, Heart, X } from 'lucide-react';
+import { Play, Pause, Star, Clock, Calendar, ArrowLeft, Loader, Heart, X, Film } from 'lucide-react';
 import ReactPlayer from 'react-player';
 import { moviesAPI, watchAPI, recommendationsAPI, interactionsAPI } from '../api';
 import { MovieCard } from '../components/MovieCard';
@@ -18,6 +18,7 @@ export const MovieDetailPage = () => {
   const [playing, setPlaying] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
   const [userRating, setUserRating] = useState(0);
+  const [trailerUrl, setTrailerUrl] = useState(null);
   const playerRef = useRef(null);
 
   useEffect(() => {
@@ -29,6 +30,10 @@ export const MovieDetailPage = () => {
     try {
       const response = await moviesAPI.getMovie(id);
       setMovie(response.data);
+      // Set trailer URL from movie data
+      if (response.data.trailer_url) {
+        setTrailerUrl(response.data.trailer_url);
+      }
     } catch (error) {
       toast.error('Failed to load movie details');
       console.error(error);
@@ -47,20 +52,22 @@ export const MovieDetailPage = () => {
   };
 
   const handlePlayClick = async () => {
-    if (!isAuthenticated) {
-      toast.error('Please sign in to watch');
+    if (!trailerUrl) {
+      toast.error('Trailer not available for this movie');
       return;
     }
 
-    try {
-      await watchAPI.startWatching(id);
-      setShowPlayer(true);
-      setPlaying(true);
-      toast.success('Starting playback...');
-    } catch (error) {
-      toast.error('Failed to start watching');
-      console.error(error);
+    if (isAuthenticated) {
+      try {
+        await watchAPI.startWatching(id);
+      } catch (error) {
+        console.error('Failed to record watch start:', error);
+      }
     }
+    
+    setShowPlayer(true);
+    setPlaying(true);
+    toast.success('Playing trailer...');
   };
 
   const handleClosePlayer = () => {
@@ -196,11 +203,20 @@ export const MovieDetailPage = () => {
                 <button
                   data-testid="play-movie-button"
                   onClick={handlePlayClick}
-                  disabled={showPlayer}
+                  disabled={showPlayer || !trailerUrl}
                   className="bg-primary hover:bg-primary-hover text-black font-bold py-3 px-8 rounded-full flex items-center gap-2 transition-transform hover:scale-105 shadow-glow disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Play className="w-5 h-5 fill-current" />
-                  {showPlayer ? 'Now Playing' : 'Play Now'}
+                  {trailerUrl ? (
+                    <>
+                      <Play className="w-5 h-5 fill-current" />
+                      {showPlayer ? 'Now Playing' : 'Watch Trailer'}
+                    </>
+                  ) : (
+                    <>
+                      <Film className="w-5 h-5" />
+                      Trailer Unavailable
+                    </>
+                  )}
                 </button>
                 <button
                   data-testid="like-movie-button"
@@ -240,7 +256,7 @@ export const MovieDetailPage = () => {
               <div className="absolute inset-0">
                 <ReactPlayer
                   ref={playerRef}
-                  url="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+                  url={trailerUrl}
                   width="100%"
                   height="100%"
                   controls
@@ -250,13 +266,19 @@ export const MovieDetailPage = () => {
                   onProgress={handleProgress}
                   onEnded={() => {
                     setPlaying(false);
-                    toast.success('Movie finished!');
+                    toast.success('Trailer finished!');
                   }}
                   onError={(e) => {
                     console.error('Player error:', e);
-                    toast.error('Error playing video');
+                    toast.error('Error playing trailer');
                   }}
                   config={{
+                    youtube: {
+                      playerVars: {
+                        showinfo: 1,
+                        origin: window.location.origin
+                      }
+                    },
                     file: {
                       attributes: {
                         controlsList: 'nodownload',
@@ -269,7 +291,10 @@ export const MovieDetailPage = () => {
 
             {/* Movie Info Below Player */}
             <div className="mt-6 glass-effect rounded-lg p-6">
-              <h2 className="font-heading text-2xl font-bold text-white mb-2">{movie.title}</h2>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="px-2 py-1 bg-red-600 text-white text-xs font-bold rounded">TRAILER</span>
+                <h2 className="font-heading text-2xl font-bold text-white">{movie.title}</h2>
+              </div>
               <div className="flex items-center gap-4 text-text-secondary text-sm">
                 <div className="flex items-center gap-1">
                   <Star className="w-4 h-4 text-yellow-400 fill-current" />

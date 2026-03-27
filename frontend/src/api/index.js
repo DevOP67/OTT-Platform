@@ -10,6 +10,7 @@ export const authAPI = {
 export const moviesAPI = {
   getMovies: (params) => api.get('/movies', { params }),
   getMovie: (id) => api.get(`/movies/${id}`),
+  getMovieTrailer: (id) => api.get(`/movies/${id}/trailer`),
   searchMovies: (query) => api.get('/movies/search/query', { params: { q: query } }),
   syncMovies: () => api.post('/admin/sync-movies'),
 };
