@@ -210,8 +210,13 @@ async def get_personalized_recommendations(
         {"_id": 0}
     ).to_list(1000)
     
-    # Get all movies
-    all_movies = await db.movies.find({}, {"_id": 0}).to_list(10000)
+    # Get all movies with optimized projection
+    movie_projection = {
+        "_id": 0, "id": 1, "title": 1, "genres": 1, "rating": 1, "popularity": 1, 
+        "embedding": 1, "poster_url": 1, "backdrop_url": 1, "overview": 1, 
+        "release_date": 1, "runtime": 1, "language": 1, "trailer_url": 1, "tmdb_id": 1
+    }
+    all_movies = await db.movies.find({}, movie_projection).to_list(1000)
     
     if not all_movies:
         return {"recommendations": []}
@@ -269,8 +274,13 @@ async def get_similar_movies(movie_id: str, limit: int = Query(10, le=50)):
     if not target_movie:
         raise HTTPException(status_code=404, detail="Movie not found")
     
-    # Get all movies
-    all_movies = await db.movies.find({}, {"_id": 0}).to_list(10000)
+    # Get all movies with optimized projection
+    movie_projection = {
+        "_id": 0, "id": 1, "title": 1, "genres": 1, "rating": 1, "popularity": 1, 
+        "embedding": 1, "poster_url": 1, "backdrop_url": 1, "overview": 1, 
+        "release_date": 1, "runtime": 1, "language": 1, "trailer_url": 1, "tmdb_id": 1
+    }
+    all_movies = await db.movies.find({}, movie_projection).to_list(1000)
     
     # Get similar movies
     similar = recommendation_engine.get_similar_movies(movie_id, all_movies, top_k=limit)
@@ -558,8 +568,13 @@ async def get_intelligent_recommendations(
     patterns = behavior_analyzer.analyze_watch_patterns(watch_history)
     mood = behavior_analyzer.detect_mood(watch_history, interactions)
     
-    # Get all movies
-    all_movies = await db.movies.find({}, {"_id": 0}).to_list(10000)
+    # Get all movies with optimized projection
+    movie_projection = {
+        "_id": 0, "id": 1, "title": 1, "genres": 1, "rating": 1, "popularity": 1, 
+        "embedding": 1, "poster_url": 1, "backdrop_url": 1, "overview": 1, 
+        "release_date": 1, "runtime": 1, "language": 1, "trailer_url": 1, "tmdb_id": 1
+    }
+    all_movies = await db.movies.find({}, movie_projection).to_list(1000)
     
     if not all_movies:
         return {"recommendations": []}

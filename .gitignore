@@ -80,11 +80,6 @@ agenthub/agents/youtube/db
 android-sdk/ frontend/node_modules/.cache/default-development/0.pack
 frontend/node_modules/.cache/default-development/0.pack
 ziPXXgS7
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
+
+# Test credentials (do not deploy)
+**/test_credentials.md
