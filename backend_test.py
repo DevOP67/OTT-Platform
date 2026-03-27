@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 
 class MoviePlatformTester:
-    def __init__(self, base_url="https://ai-movie-platform.preview.emergentagent.com"):
+    def __init__(self, base_url="https://cinema-player-12.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.user_id = None
