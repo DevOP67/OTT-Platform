@@ -1,12 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Play, Pause, Star, Clock, Calendar, ArrowLeft, Loader, Heart, X, Film } from 'lucide-react';
+import { Play, Star, Clock, Calendar, ArrowLeft, Loader, Heart, X, Film, Tv } from 'lucide-react';
 import ReactPlayer from 'react-player';
 import { moviesAPI, watchAPI, recommendationsAPI, interactionsAPI } from '../api';
 import { MovieCard } from '../components/MovieCard';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
+
+// Sample movie URL for "Watch Movie" feature (demo purposes)
+const DEMO_MOVIE_URL = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
 export const MovieDetailPage = () => {
   const { id } = useParams();
@@ -17,8 +20,10 @@ export const MovieDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
+  const [playerType, setPlayerType] = useState(null); // 'trailer' or 'movie'
   const [userRating, setUserRating] = useState(0);
   const [trailerUrl, setTrailerUrl] = useState(null);
+  const [playerReady, setPlayerReady] = useState(false);
   const playerRef = useRef(null);
 
   useEffect(() => {
@@ -26,11 +31,19 @@ export const MovieDetailPage = () => {
     fetchSimilarMovies();
   }, [id]);
 
+  // Reset player state when modal closes
+  useEffect(() => {
+    if (!showPlayer) {
+      setPlaying(false);
+      setPlayerReady(false);
+      setPlayerType(null);
+    }
+  }, [showPlayer]);
+
   const fetchMovieDetails = async () => {
     try {
       const response = await moviesAPI.getMovie(id);
       setMovie(response.data);
-      // Set trailer URL from movie data
       if (response.data.trailer_url) {
         setTrailerUrl(response.data.trailer_url);
       }
@@ -51,33 +64,59 @@ export const MovieDetailPage = () => {
     }
   };
 
-  const handlePlayClick = async () => {
+  const handleWatchTrailer = useCallback(async () => {
     if (!trailerUrl) {
       toast.error('Trailer not available for this movie');
       return;
     }
 
-    if (isAuthenticated) {
-      try {
-        await watchAPI.startWatching(id);
-      } catch (error) {
-        console.error('Failed to record watch start:', error);
-      }
-    }
-    
+    setPlayerType('trailer');
     setShowPlayer(true);
-    setPlaying(true);
-    toast.success('Playing trailer...');
-  };
-
-  const handleClosePlayer = () => {
+    // Don't auto-play, wait for user to click play
     setPlaying(false);
-    setShowPlayer(false);
-  };
+    toast.success('Loading trailer...');
+  }, [trailerUrl]);
 
-  const handleProgress = (state) => {
-    // Update watch progress every 10 seconds
-    if (state.playedSeconds % 10 < 1 && state.playedSeconds > 0) {
+  const handleWatchMovie = useCallback(async () => {
+    if (!isAuthenticated) {
+      toast.error('Please sign in to watch movies');
+      return;
+    }
+
+    try {
+      await watchAPI.startWatching(id);
+    } catch (error) {
+      console.error('Failed to record watch start:', error);
+    }
+
+    setPlayerType('movie');
+    setShowPlayer(true);
+    setPlaying(false);
+    toast.success('Loading movie...');
+  }, [id, isAuthenticated]);
+
+  const handleClosePlayer = useCallback(() => {
+    setPlaying(false);
+    // Small delay before hiding to prevent the "media removed" error
+    setTimeout(() => {
+      setShowPlayer(false);
+    }, 100);
+  }, []);
+
+  const handlePlayerReady = useCallback(() => {
+    setPlayerReady(true);
+  }, []);
+
+  const handlePlay = useCallback(() => {
+    setPlaying(true);
+  }, []);
+
+  const handlePause = useCallback(() => {
+    setPlaying(false);
+  }, []);
+
+  const handleProgress = useCallback((state) => {
+    if (playerType === 'movie' && state.playedSeconds % 10 < 1 && state.playedSeconds > 0) {
       try {
         watchAPI.updateProgress({
           movie_id: id,
@@ -88,7 +127,7 @@ export const MovieDetailPage = () => {
         console.error('Failed to update progress:', error);
       }
     }
-  };
+  }, [id, playerType]);
 
   const handleRate = async (rating) => {
     if (!isAuthenticated) {
@@ -117,6 +156,22 @@ export const MovieDetailPage = () => {
     } catch (error) {
       toast.error('Failed to like');
     }
+  };
+
+  const handlePlayerError = useCallback((error) => {
+    console.error('Player error:', error);
+    // Don't show error toast for common autoplay issues
+    if (error?.message?.includes('interrupted') || error?.message?.includes('removed')) {
+      return;
+    }
+    toast.error('Error playing video. Please try again.');
+  }, []);
+
+  const getCurrentUrl = () => {
+    if (playerType === 'trailer') {
+      return trailerUrl;
+    }
+    return DEMO_MOVIE_URL;
   };
 
   if (loading) {
@@ -199,25 +254,40 @@ export const MovieDetailPage = () => {
 
               <p className="text-lg text-text-secondary max-w-3xl">{movie.overview}</p>
 
+              {/* Buttons Row */}
               <div className="flex flex-wrap gap-4 pt-4">
+                {/* Watch Movie Button */}
                 <button
-                  data-testid="play-movie-button"
-                  onClick={handlePlayClick}
-                  disabled={showPlayer || !trailerUrl}
+                  data-testid="watch-movie-button"
+                  onClick={handleWatchMovie}
+                  disabled={showPlayer && playerType === 'movie'}
                   className="bg-primary hover:bg-primary-hover text-black font-bold py-3 px-8 rounded-full flex items-center gap-2 transition-transform hover:scale-105 shadow-glow disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Play className="w-5 h-5 fill-current" />
+                  {showPlayer && playerType === 'movie' ? 'Playing' : 'Watch Movie'}
+                </button>
+
+                {/* Watch Trailer Button */}
+                <button
+                  data-testid="watch-trailer-button"
+                  onClick={handleWatchTrailer}
+                  disabled={!trailerUrl || (showPlayer && playerType === 'trailer')}
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full flex items-center gap-2 transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {trailerUrl ? (
                     <>
-                      <Play className="w-5 h-5 fill-current" />
-                      {showPlayer ? 'Now Playing' : 'Watch Trailer'}
+                      <Film className="w-5 h-5" />
+                      {showPlayer && playerType === 'trailer' ? 'Playing Trailer' : 'Watch Trailer'}
                     </>
                   ) : (
                     <>
                       <Film className="w-5 h-5" />
-                      Trailer Unavailable
+                      No Trailer
                     </>
                   )}
                 </button>
+
+                {/* Add to Favorites Button */}
                 <button
                   data-testid="like-movie-button"
                   onClick={handleLike}
@@ -256,32 +326,33 @@ export const MovieDetailPage = () => {
               <div className="absolute inset-0">
                 <ReactPlayer
                   ref={playerRef}
-                  url={trailerUrl}
+                  url={getCurrentUrl()}
                   width="100%"
                   height="100%"
                   controls
                   playing={playing}
-                  onPlay={() => setPlaying(true)}
-                  onPause={() => setPlaying(false)}
+                  onReady={handlePlayerReady}
+                  onPlay={handlePlay}
+                  onPause={handlePause}
                   onProgress={handleProgress}
                   onEnded={() => {
                     setPlaying(false);
-                    toast.success('Trailer finished!');
+                    toast.success(playerType === 'trailer' ? 'Trailer finished!' : 'Movie finished!');
                   }}
-                  onError={(e) => {
-                    console.error('Player error:', e);
-                    toast.error('Error playing trailer');
-                  }}
+                  onError={handlePlayerError}
                   config={{
                     youtube: {
                       playerVars: {
                         showinfo: 1,
+                        rel: 0,
+                        modestbranding: 1,
                         origin: window.location.origin
                       }
                     },
                     file: {
                       attributes: {
                         controlsList: 'nodownload',
+                        playsInline: true,
                       },
                     },
                   }}
@@ -292,7 +363,11 @@ export const MovieDetailPage = () => {
             {/* Movie Info Below Player */}
             <div className="mt-6 glass-effect rounded-lg p-6">
               <div className="flex items-center gap-2 mb-2">
-                <span className="px-2 py-1 bg-red-600 text-white text-xs font-bold rounded">TRAILER</span>
+                <span className={`px-2 py-1 text-white text-xs font-bold rounded ${
+                  playerType === 'trailer' ? 'bg-red-600' : 'bg-primary'
+                }`}>
+                  {playerType === 'trailer' ? 'TRAILER' : 'MOVIE'}
+                </span>
                 <h2 className="font-heading text-2xl font-bold text-white">{movie.title}</h2>
               </div>
               <div className="flex items-center gap-4 text-text-secondary text-sm">
@@ -305,6 +380,12 @@ export const MovieDetailPage = () => {
                 <span>•</span>
                 <span>{movie.release_date}</span>
               </div>
+              {!playerReady && (
+                <div className="mt-3 flex items-center gap-2 text-text-secondary">
+                  <Loader className="w-4 h-4 animate-spin" />
+                  <span className="text-sm">Loading player...</span>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>

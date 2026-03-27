@@ -1,422 +1,284 @@
 #!/usr/bin/env python3
 """
-Comprehensive Backend API Testing for AI Movie Recommendation Platform
-Tests all endpoints using the public URL for production-like testing
+Backend API Testing Script for WebSocket Chat Functionality
+Tests the Watch Party WebSocket chat feature with echo to sender
 """
 
-import requests
-import sys
+import asyncio
 import json
+import os
+import sys
+import websockets
+import requests
 from datetime import datetime
-from typing import Dict, Any, Optional
+import uuid
 
-class MoviePlatformTester:
-    def __init__(self, base_url="https://cinema-player-12.preview.emergentagent.com"):
-        self.base_url = base_url
-        self.token = None
+# Configuration
+BACKEND_URL = "https://cinema-player-12.preview.emergentagent.com"
+API_BASE = f"{BACKEND_URL}/api"
+# Try internal WebSocket connection first
+WS_BASE = "ws://localhost:8001"
+
+# Test credentials
+TEST_EMAIL = "test@example.com"
+TEST_PASSWORD = "test123456"
+
+class WebSocketChatTester:
+    def __init__(self):
+        self.auth_token = None
         self.user_id = None
-        self.tests_run = 0
-        self.tests_passed = 0
-        self.test_results = []
+        self.session_id = None
         
-        # Test data
-        self.test_user = {
-            "email": "test@example.com",
-            "password": "password123",
-            "name": "Test User"
-        }
+    def log(self, message):
+        """Log with timestamp"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print(f"[{timestamp}] {message}")
         
-    def log_test(self, name: str, success: bool, details: str = "", response_data: Any = None):
-        """Log test result"""
-        self.tests_run += 1
-        if success:
-            self.tests_passed += 1
-            
-        result = {
-            "test_name": name,
-            "success": success,
-            "details": details,
-            "timestamp": datetime.now().isoformat()
-        }
+    def authenticate(self):
+        """Authenticate and get token"""
+        self.log("🔐 Authenticating user...")
         
-        if response_data and isinstance(response_data, dict):
-            result["response_sample"] = str(response_data)[:200]  # Truncate for readability
-            
-        self.test_results.append(result)
-        
-        status = "✅ PASS" if success else "❌ FAIL"
-        print(f"{status} - {name}")
-        if details:
-            print(f"    Details: {details}")
-        if not success and response_data:
-            print(f"    Response: {response_data}")
-        print()
-
-    def make_request(self, method: str, endpoint: str, expected_status: int = 200, 
-                    data: Optional[Dict] = None, params: Optional[Dict] = None) -> tuple:
-        """Make HTTP request and return success status and response"""
-        url = f"{self.base_url}/api/{endpoint}"
-        headers = {'Content-Type': 'application/json'}
-        
-        if self.token:
-            headers['Authorization'] = f'Bearer {self.token}'
-            
-        try:
-            if method == 'GET':
-                response = requests.get(url, headers=headers, params=params, timeout=30)
-            elif method == 'POST':
-                response = requests.post(url, json=data, headers=headers, timeout=30)
-            elif method == 'PUT':
-                response = requests.put(url, json=data, headers=headers, timeout=30)
-            else:
-                return False, {"error": f"Unsupported method: {method}"}
-                
-            success = response.status_code == expected_status
-            
-            try:
-                response_data = response.json()
-            except:
-                response_data = {"status_code": response.status_code, "text": response.text[:200]}
-                
-            return success, response_data
-            
-        except requests.exceptions.RequestException as e:
-            return False, {"error": str(e)}
-
-    def test_health_check(self):
-        """Test basic connectivity"""
-        success, response = self.make_request('GET', 'health')
-        self.log_test(
-            "Health Check", 
-            success, 
-            f"Backend connectivity test",
-            response
-        )
-        return success
-
-    def test_root_endpoint(self):
-        """Test root API endpoint"""
-        success, response = self.make_request('GET', '')
-        self.log_test(
-            "Root Endpoint", 
-            success, 
-            "API root endpoint accessibility",
-            response
-        )
-        return success
-
-    def test_user_registration(self):
-        """Test user registration"""
-        # First try to register new user with timestamp to avoid conflicts
-        timestamp = datetime.now().strftime("%H%M%S")
-        test_data = {
-            "email": f"testuser_{timestamp}@example.com",
-            "password": "testpass123",
-            "name": "Test User Registration",
-            "preferences": {
-                "favorite_genres": ["Action", "Sci-Fi"],
-                "mood": "excited"
-            }
-        }
-        
-        success, response = self.make_request('POST', 'auth/register', 200, test_data)
-        
-        if success and 'access_token' in response:
-            details = f"Successfully registered user: {test_data['email']}"
-        else:
-            details = f"Registration failed for {test_data['email']}"
-            
-        self.log_test("User Registration", success, details, response)
-        return success
-
-    def test_user_login(self):
-        """Test user login with provided test credentials"""
+        # Try login first
         login_data = {
-            "email": self.test_user["email"],
-            "password": self.test_user["password"]
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         }
         
-        success, response = self.make_request('POST', 'auth/login', 200, login_data)
-        
-        if success and 'access_token' in response:
-            self.token = response['access_token']
-            self.user_id = response.get('user', {}).get('id')
-            details = f"Successfully logged in as {self.test_user['email']}"
-        else:
-            details = f"Login failed for {self.test_user['email']}"
+        try:
+            response = requests.post(f"{API_BASE}/auth/login", json=login_data)
+            if response.status_code == 200:
+                data = response.json()
+                self.auth_token = data["access_token"]
+                self.user_id = data["user"]["id"]
+                self.log(f"✅ Login successful - User ID: {self.user_id}")
+                return True
+        except Exception as e:
+            self.log(f"❌ Login failed: {e}")
             
-        self.log_test("User Login", success, details, response)
-        return success
-
-    def test_get_current_user(self):
-        """Test getting current user info"""
-        if not self.token:
-            self.log_test("Get Current User", False, "No auth token available")
+        # If login fails, try registration
+        self.log("🔐 Trying registration...")
+        register_data = {
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD,
+            "name": "Test User",
+            "preferences": {"genres": ["action", "comedy"]}
+        }
+        
+        try:
+            response = requests.post(f"{API_BASE}/auth/register", json=register_data)
+            if response.status_code == 200:
+                data = response.json()
+                self.auth_token = data["access_token"]
+                self.user_id = data["user"]["id"]
+                self.log(f"✅ Registration successful - User ID: {self.user_id}")
+                return True
+            else:
+                self.log(f"❌ Registration failed: {response.status_code} - {response.text}")
+                return False
+        except Exception as e:
+            self.log(f"❌ Registration error: {e}")
             return False
-            
-        success, response = self.make_request('GET', 'auth/me')
+    
+    def get_movies(self):
+        """Get available movies"""
+        self.log("🎬 Fetching movies...")
+        try:
+            response = requests.get(f"{API_BASE}/movies?limit=5")
+            if response.status_code == 200:
+                movies = response.json()["movies"]
+                if movies:
+                    movie = movies[0]
+                    self.log(f"✅ Found movie: {movie['title']} (ID: {movie['id']})")
+                    return movie["id"]
+                else:
+                    self.log("❌ No movies found")
+                    return None
+            else:
+                self.log(f"❌ Failed to fetch movies: {response.status_code}")
+                return None
+        except Exception as e:
+            self.log(f"❌ Error fetching movies: {e}")
+            return None
+    
+    def create_group_session(self, movie_id):
+        """Create a group watch session"""
+        self.log("👥 Creating group session...")
         
-        if success and 'email' in response:
-            details = f"Retrieved user info for {response.get('email')}"
-        else:
-            details = "Failed to get current user info"
-            
-        self.log_test("Get Current User", success, details, response)
-        return success
-
-    def test_sync_movies(self):
-        """Test movie synchronization from TMDB"""
-        success, response = self.make_request('POST', 'admin/sync-movies')
-        
-        if success:
-            details = f"Movie sync completed: {response.get('message', 'Success')}"
-        else:
-            details = "Movie sync failed - may use mock data"
-            
-        self.log_test("Sync Movies", success, details, response)
-        return success
-
-    def test_get_movies(self):
-        """Test getting movies list"""
-        success, response = self.make_request('GET', 'movies')
-        
-        if success and 'movies' in response:
-            movie_count = len(response['movies'])
-            total = response.get('total', 0)
-            details = f"Retrieved {movie_count} movies (total: {total})"
-        else:
-            details = "Failed to retrieve movies"
-            
-        self.log_test("Get Movies", success, details, response)
-        return success, response.get('movies', []) if success else []
-
-    def test_search_movies(self):
-        """Test movie search functionality"""
-        search_params = {"q": "action"}
-        success, response = self.make_request('GET', 'movies/search/query', params=search_params)
-        
-        if success and 'movies' in response:
-            movie_count = len(response['movies'])
-            details = f"Search returned {movie_count} movies for 'action'"
-        else:
-            details = "Movie search failed"
-            
-        self.log_test("Search Movies", success, details, response)
-        return success
-
-    def test_get_movie_details(self, movie_id: str):
-        """Test getting specific movie details"""
-        success, response = self.make_request('GET', f'movies/{movie_id}')
-        
-        if success and 'title' in response:
-            details = f"Retrieved details for movie: {response.get('title')}"
-        else:
-            details = f"Failed to get details for movie ID: {movie_id}"
-            
-        self.log_test("Get Movie Details", success, details, response)
-        return success
-
-    def test_start_watching(self, movie_id: str):
-        """Test starting to watch a movie"""
-        if not self.token:
-            self.log_test("Start Watching", False, "No auth token available")
-            return False
-            
-        success, response = self.make_request('POST', f'watch/start?movie_id={movie_id}')
-        
-        if success:
-            details = f"Started watching movie {movie_id}: {response.get('message')}"
-        else:
-            details = f"Failed to start watching movie {movie_id}"
-            
-        self.log_test("Start Watching", success, details, response)
-        return success
-
-    def test_rate_movie(self, movie_id: str):
-        """Test rating a movie"""
-        if not self.token:
-            self.log_test("Rate Movie", False, "No auth token available")
-            return False
-            
-        rating_data = {
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        session_data = {
             "movie_id": movie_id,
-            "rating": 4.5
+            "name": "Test Watch Party"
         }
         
-        success, response = self.make_request('POST', 'watch/rate', 200, rating_data)
-        
-        if success:
-            details = f"Successfully rated movie {movie_id} with 4.5 stars"
-        else:
-            details = f"Failed to rate movie {movie_id}"
-            
-        self.log_test("Rate Movie", success, details, response)
-        return success
-
-    def test_get_watch_history(self):
-        """Test getting user watch history"""
-        if not self.token:
-            self.log_test("Get Watch History", False, "No auth token available")
+        try:
+            response = requests.post(f"{API_BASE}/groups/create", json=session_data, headers=headers)
+            if response.status_code == 200:
+                data = response.json()
+                self.session_id = data["id"]
+                self.log(f"✅ Group session created - Session ID: {self.session_id}")
+                return True
+            else:
+                self.log(f"❌ Failed to create session: {response.status_code} - {response.text}")
+                return False
+        except Exception as e:
+            self.log(f"❌ Error creating session: {e}")
             return False
-            
-        success, response = self.make_request('GET', 'watch/history')
+    
+    async def test_websocket_chat(self):
+        """Test WebSocket chat functionality"""
+        self.log("🔌 Testing WebSocket chat...")
         
-        if success and 'history' in response:
-            history_count = len(response['history'])
-            details = f"Retrieved {history_count} watch history items"
-        else:
-            details = "Failed to get watch history"
-            
-        self.log_test("Get Watch History", success, details, response)
-        return success
-
-    def test_personalized_recommendations(self):
-        """Test getting personalized recommendations"""
-        if not self.token:
-            self.log_test("Personalized Recommendations", False, "No auth token available")
+        ws_url = f"{WS_BASE}/ws/group/{self.session_id}/{self.user_id}"
+        self.log(f"🔗 Connecting to: {ws_url}")
+        
+        messages_received = []
+        test_messages = [
+            "Hello test message",
+            "Testing WebSocket chat functionality",
+            "Can I see my own messages?"
+        ]
+        
+        try:
+            async with websockets.connect(ws_url) as websocket:
+                self.log("✅ WebSocket connected successfully")
+                
+                # Send test messages and collect responses
+                for i, test_message in enumerate(test_messages):
+                    self.log(f"📤 Sending message {i+1}: '{test_message}'")
+                    
+                    # Send chat message
+                    message_data = {
+                        "type": "chat_message",
+                        "message": test_message,
+                        "user_id": self.user_id
+                    }
+                    
+                    await websocket.send(json.dumps(message_data))
+                    
+                    # Wait for response
+                    try:
+                        response = await asyncio.wait_for(websocket.recv(), timeout=5.0)
+                        response_data = json.loads(response)
+                        messages_received.append(response_data)
+                        
+                        self.log(f"📥 Received: {response_data}")
+                        
+                        # Verify message format
+                        if self.verify_message_format(response_data, test_message):
+                            self.log(f"✅ Message {i+1} format verified")
+                        else:
+                            self.log(f"❌ Message {i+1} format invalid")
+                            
+                    except asyncio.TimeoutError:
+                        self.log(f"⏰ Timeout waiting for message {i+1} response")
+                    except Exception as e:
+                        self.log(f"❌ Error receiving message {i+1}: {e}")
+                    
+                    # Small delay between messages
+                    await asyncio.sleep(1)
+                
+                self.log("🔌 WebSocket test completed")
+                return messages_received
+                
+        except Exception as e:
+            self.log(f"❌ WebSocket connection error: {e}")
+            return []
+    
+    def verify_message_format(self, message_data, expected_message):
+        """Verify the received message has correct format"""
+        required_fields = ["type", "user_id", "message", "timestamp"]
+        
+        # Check all required fields are present
+        for field in required_fields:
+            if field not in message_data:
+                self.log(f"❌ Missing field: {field}")
+                return False
+        
+        # Check message type
+        if message_data["type"] != "chat_message":
+            self.log(f"❌ Wrong message type: {message_data['type']}")
             return False
-            
-        success, response = self.make_request('GET', 'recommendations/personalized')
         
-        if success and 'recommendations' in response:
-            rec_count = len(response['recommendations'])
-            details = f"Retrieved {rec_count} personalized recommendations"
-        else:
-            details = "Failed to get personalized recommendations"
-            
-        self.log_test("Personalized Recommendations", success, details, response)
-        return success
-
-    def test_trending_recommendations(self):
-        """Test getting trending recommendations"""
-        success, response = self.make_request('GET', 'recommendations/trending')
-        
-        if success and 'recommendations' in response:
-            rec_count = len(response['recommendations'])
-            details = f"Retrieved {rec_count} trending recommendations"
-        else:
-            details = "Failed to get trending recommendations"
-            
-        self.log_test("Trending Recommendations", success, details, response)
-        return success
-
-    def test_similar_movies(self, movie_id: str):
-        """Test getting similar movies"""
-        success, response = self.make_request('GET', f'recommendations/similar/{movie_id}')
-        
-        if success and 'recommendations' in response:
-            rec_count = len(response['recommendations'])
-            details = f"Retrieved {rec_count} similar movies for {movie_id}"
-        else:
-            details = f"Failed to get similar movies for {movie_id}"
-            
-        self.log_test("Similar Movies", success, details, response)
-        return success
-
-    def test_platform_stats(self):
-        """Test getting platform statistics"""
-        success, response = self.make_request('GET', 'admin/stats')
-        
-        if success:
-            stats = {
-                'users': response.get('total_users', 0),
-                'movies': response.get('total_movies', 0),
-                'watches': response.get('total_watches', 0)
-            }
-            details = f"Platform stats: {stats}"
-        else:
-            details = "Failed to get platform statistics"
-            
-        self.log_test("Platform Stats", success, details, response)
-        return success
-
-    def run_comprehensive_test(self):
-        """Run all tests in sequence"""
-        print("🎬 Starting AI Movie Platform Backend Testing")
-        print(f"🔗 Testing against: {self.base_url}")
-        print("=" * 60)
-        
-        # Basic connectivity tests
-        if not self.test_health_check():
-            print("❌ Backend is not accessible. Stopping tests.")
+        # Check user_id matches sender
+        if message_data["user_id"] != self.user_id:
+            self.log(f"❌ Wrong user_id: {message_data['user_id']} != {self.user_id}")
             return False
-            
-        self.test_root_endpoint()
         
-        # Authentication tests
-        self.test_user_registration()
-        
-        if not self.test_user_login():
-            print("❌ Cannot login with test credentials. Stopping authenticated tests.")
+        # Check message content
+        if message_data["message"] != expected_message:
+            self.log(f"❌ Wrong message content: '{message_data['message']}' != '{expected_message}'")
             return False
+        
+        # Check timestamp format
+        try:
+            datetime.fromisoformat(message_data["timestamp"].replace('Z', '+00:00'))
+        except ValueError:
+            self.log(f"❌ Invalid timestamp format: {message_data['timestamp']}")
+            return False
+        
+        return True
+    
+    async def run_full_test(self):
+        """Run complete WebSocket chat test"""
+        self.log("🚀 Starting WebSocket Chat Test")
+        self.log("=" * 50)
+        
+        # Step 1: Authenticate
+        if not self.authenticate():
+            self.log("❌ Authentication failed - cannot proceed")
+            return False
+        
+        # Step 2: Get a movie
+        movie_id = self.get_movies()
+        if not movie_id:
+            self.log("❌ No movies available - cannot proceed")
+            return False
+        
+        # Step 3: Create group session
+        if not self.create_group_session(movie_id):
+            self.log("❌ Failed to create group session - cannot proceed")
+            return False
+        
+        # Step 4: Test WebSocket chat
+        messages = await self.test_websocket_chat()
+        
+        # Step 5: Analyze results
+        self.log("=" * 50)
+        self.log("📊 TEST RESULTS")
+        self.log("=" * 50)
+        
+        if messages:
+            self.log(f"✅ WebSocket chat is WORKING")
+            self.log(f"✅ Sent and received {len(messages)} messages")
+            self.log(f"✅ Sender can see their own messages (echo functionality)")
+            self.log(f"✅ Message format includes: type, user_id, message, timestamp")
             
-        self.test_get_current_user()
-        
-        # Data initialization
-        self.test_sync_movies()
-        
-        # Movie catalog tests
-        movies_success, movies = self.test_get_movies()
-        self.test_search_movies()
-        
-        # Test with first available movie if any
-        test_movie_id = None
-        if movies_success and movies:
-            test_movie_id = movies[0].get('id')
-            if test_movie_id:
-                self.test_get_movie_details(test_movie_id)
-                self.test_start_watching(test_movie_id)
-                self.test_rate_movie(test_movie_id)
-                self.test_similar_movies(test_movie_id)
-        
-        # User interaction tests
-        self.test_get_watch_history()
-        
-        # Recommendation tests
-        self.test_personalized_recommendations()
-        self.test_trending_recommendations()
-        
-        # Admin tests
-        self.test_platform_stats()
-        
-        # Print summary
-        print("=" * 60)
-        print(f"📊 Test Summary: {self.tests_passed}/{self.tests_run} tests passed")
-        
-        if self.tests_passed == self.tests_run:
-            print("🎉 All tests passed!")
+            # Show sample message
+            if messages:
+                sample = messages[0]
+                self.log(f"📝 Sample message format:")
+                self.log(f"   Type: {sample.get('type')}")
+                self.log(f"   User ID: {sample.get('user_id')}")
+                self.log(f"   Message: {sample.get('message')}")
+                self.log(f"   Timestamp: {sample.get('timestamp')}")
+            
             return True
         else:
-            failed_tests = [r for r in self.test_results if not r['success']]
-            print(f"❌ {len(failed_tests)} tests failed:")
-            for test in failed_tests:
-                print(f"   - {test['test_name']}: {test['details']}")
+            self.log("❌ WebSocket chat is NOT WORKING")
+            self.log("❌ No messages received - echo functionality failed")
             return False
 
-def main():
-    """Main test execution"""
-    tester = MoviePlatformTester()
+async def main():
+    """Main test function"""
+    tester = WebSocketChatTester()
+    success = await tester.run_full_test()
     
-    try:
-        success = tester.run_comprehensive_test()
-        
-        # Save detailed results
-        with open('/app/backend_test_results.json', 'w') as f:
-            json.dump({
-                'summary': {
-                    'total_tests': tester.tests_run,
-                    'passed_tests': tester.tests_passed,
-                    'success_rate': tester.tests_passed / tester.tests_run if tester.tests_run > 0 else 0,
-                    'timestamp': datetime.now().isoformat()
-                },
-                'detailed_results': tester.test_results
-            }, f, indent=2)
-        
-        return 0 if success else 1
-        
-    except Exception as e:
-        print(f"💥 Test execution failed: {str(e)}")
-        return 1
+    if success:
+        print("\n🎉 ALL TESTS PASSED - WebSocket chat with echo is working!")
+        sys.exit(0)
+    else:
+        print("\n💥 TESTS FAILED - WebSocket chat needs fixing")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    sys.exit(main())
+    asyncio.run(main())

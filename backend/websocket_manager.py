@@ -84,13 +84,14 @@ class ConnectionManager:
         }, exclude=websocket)
     
     async def send_message(self, session_id: str, user_id: str, message: str, websocket: WebSocket):
-        """Send chat message to all users in session"""
+        """Send chat message to all users in session including sender"""
+        # Include sender so they see their own messages
         await self.broadcast(session_id, {
             'type': 'chat_message',
             'user_id': user_id,
             'message': message,
             'timestamp': datetime.now(timezone.utc).isoformat()
-        }, exclude=websocket)
+        })  # Don't exclude anyone - sender should see their own message
 
 # Global manager instance
 manager = ConnectionManager()
