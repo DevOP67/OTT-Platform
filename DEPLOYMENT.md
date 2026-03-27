@@ -36,7 +36,7 @@
    - **Environment**: Docker
    - **Branch**: main
 4. Add Environment Variable:
-   - `REACT_APP_API_URL`: https://your-backend-service-name.onrender.com/api
+   - `REACT_APP_BACKEND_URL`: https://your-backend-service-name.onrender.com
 5. Click "Create Web Service"
 
 ## Step 4: Update Frontend API URL
@@ -52,7 +52,7 @@ If you prefer Vercel:
 1. **Frontend on Vercel**:
    - Import repository to Vercel
    - Set root directory to `frontend`
-   - Add environment variable: `REACT_APP_API_URL`
+   - Add environment variable: `REACT_APP_BACKEND_URL`
 
 2. **Backend on Vercel** (more complex):
    - Would require converting to serverless functions
